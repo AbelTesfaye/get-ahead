@@ -1,13 +1,15 @@
-#include <bits/stdc++.h>
+/*
+    Tests a "string" to "int" implementation of "SerializingHashMap".
+*/
+#include <string>
 #include <gtest/gtest.h>
 #include "../include/SerializingHashMap.h"
-
-using namespace std;
 
 class StringToIntTest : public ::testing::Test
 {
 protected:
-    SerializingHashMap<string, int> stringToInt1, stringToInt2, stringToInt3;
+    SerializingHashMap<std::string, int> stringToInt1, stringToInt2, stringToInt3;
+
     StringToIntTest()
     {
         stringToInt2.insert("hi0", 7);
@@ -71,7 +73,7 @@ TEST_F(StringToIntTest, getIsZeroForUndefinedValues)
 
     for (int i = 0; i < 10; i++)
     {
-        string k = "hi" + to_string(i);
+        std::string k = "hi" + std::to_string(i);
 
         if (k == "hi1")
         {
