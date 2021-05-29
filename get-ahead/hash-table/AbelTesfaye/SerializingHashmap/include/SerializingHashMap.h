@@ -1,3 +1,10 @@
+#ifndef SERIALIZINGHASHMAP_H
+#define SERIALIZINGHASHMAP_H
+
+#include <string>
+#include <vector>
+#include <functional>
+
 /*
   A hash table implementation that can be used on any data type.
   
@@ -9,49 +16,30 @@
     Example on a custom data type:
         - Check the file: CustomDataStructureTest.cpp
 */
-
-#ifndef SERIALIZINGHASHMAP_H
-#define SERIALIZINGHASHMAP_H
-
-#include <string>
-#include <vector>
-#include <functional>
-
 template <typename TKey, typename TValue>
 class SerializingHashMap
 {
 public:
-    /*
-        `keySerializerFunction`: A function that converts "TKey" to a "string".
-        `initSize`: Initial size of `container`.
-    */
     SerializingHashMap(
-        std::function<std::string(TKey)> keySerializerFunction = [](std::string str) {
+        const std::function<std::string(TKey)> keySerializerFunction = [](std::string str) {
             return str;
         },
-        int initSize = 1) : container(std::vector<std::shared_ptr<Entry>>(initSize)), keySerializerFunction(keySerializerFunction)
+        const int initSize = 1) : container(std::vector<std::unique_ptr<Entry>>(initSize)), keySerializerFunction(keySerializerFunction)
     {
     }
 
     /*
-        Creates or updates the hash table entry for `key`.
-
-        `key`: Hash table entry key
-        `value`: Hash table value at entry `key`
-
         Returns "true" if this insertion is a new insertion i.e if there was no
         entry previously created for `key` or if `key` was previously deleted.
     */
-    bool insert(TKey key, TValue value)
+    bool insert(const TKey key, const TValue value)
     {
-        std::string serializedKey = keySerializerFunction(key);
-
         if (itemCountInContainer == container.size())
         {
-            _resizeContainer(itemCountInContainer == 0 ? 1 : container.size() * 2);
+            resizeHashTableContainer(itemCountInContainer == 0 ? 1 : container.size() * 2);
         }
 
-        bool isNewInsertion = _insert(serializedKey, value, container);
+        bool isNewInsertion = serializedKeyInsert(keySerializerFunction(key), value, container);
 
         if (isNewInsertion)
             itemCountInContainer++;
@@ -64,28 +52,24 @@ public:
         If `key` was not previously stored, then it will return a default constructor
         initialized object of "TValue".
     */
-    TValue get(TKey key)
+    TValue get(const TKey key) const
     {
-        std::string serializedKey = keySerializerFunction(key);
-        std::shared_ptr<Entry> entry = _get(serializedKey);
+        Entry *entry = serializedKeyGetEntry(keySerializerFunction(key));
         if (entry == nullptr)
         {
             return TValue();
         }
         return entry->value;
     }
-    /*
-        Removes the hash table entry of `key`
-    */
-    void erase(TKey key)
+
+    void erase(const TKey key)
     {
-        std::string serializedKey = keySerializerFunction(key);
-        int i = _getIndex(serializedKey);
+        int i = serializedKeyGetEntryIndex(keySerializerFunction(key));
 
         if (i == -1)
             return;
 
-        std::shared_ptr<Entry> el = container[i];
+        Entry *el = container[i].get();
 
         if (el != nullptr)
         {
@@ -95,22 +79,17 @@ public:
             int half = container.size() / 2;
             if (itemCountInContainer < half)
             {
-                _resizeContainer(half);
+                resizeHashTableContainer(half);
             }
         };
     }
-    /*
-        Returns "true" if a hash table entry for `key` exists.
-    */
-    bool exists(TKey key)
+
+    bool exists(const TKey key) const
     {
-        std::string serializedKey = keySerializerFunction(key);
-        return _get(serializedKey) != nullptr;
+        return serializedKeyGetEntry(keySerializerFunction(key)) != nullptr;
     }
-    /*
-        Returns the number of valid entries in the hash table.
-    */
-    int size()
+
+    int size() const
     {
         return itemCountInContainer;
     }
@@ -127,17 +106,11 @@ private:
     };
 
     int itemCountInContainer = 0;
-    std::vector<std::shared_ptr<Entry>> container;
+    std::vector<std::unique_ptr<Entry>> container;
 
-    /*
-        Function to convert "TKey" to "string".
-    */
     std::function<std::string(TKey)> keySerializerFunction;
 
-    /*
-        Returns an index where `key` should be stored in `containerToUse`.
-    */
-    int _hash(std::string &key, std::vector<std::shared_ptr<Entry>> &containerToUse)
+    int hash(const std::string &key, const std::vector<std::unique_ptr<Entry>> &containerToUse) const
     {
         int idx = 0;
 
@@ -149,18 +122,27 @@ private:
 
         return idx;
     }
-    /*
-        Inserts or updates the `value` for `key` in `containerToUse`
-    */
-    bool _insert(std::string &key, TValue value, std::vector<std::shared_ptr<Entry>> &containerToUse)
-    {
-        int idx = _hash(key, containerToUse);
 
+    bool serializedKeyInsert(const std::string &key,const TValue value, std::vector<std::unique_ptr<Entry>> &containerToUse)
+    {
+        int idx = hash(key, containerToUse);
+
+        /*
+            The code below searches for the correct index to place the hash table entry.
+
+            One of the following can happen:
+            - Use the first index that points to "nullptr"
+            - Use the first index that has a key which is equal to `key`.
+                This can happen when the value of a pre-existing entry is getting updated. 
+                Or it can happen when we want to update an entry that was deleted but a resize didn't occur.
+            
+            - If none of the above conditions are fullfilled, then append this entry to the container
+        */
         for (int i = idx; i < containerToUse.size(); i++)
         {
             if (containerToUse[i] == nullptr)
             {
-                containerToUse[i] = std::make_shared<Entry>(Entry{key, value});
+                containerToUse[i] = std::make_unique<Entry>(Entry{key, value});
                 return true;
             }
 
@@ -178,11 +160,7 @@ private:
             }
         }
 
-        /*
-            The following line will be executed if all the rows including and below
-            idx are occupied by other keys.
-        */
-        containerToUse.push_back(std::make_shared<Entry>(Entry{key, value}));
+        containerToUse.push_back(std::make_unique<Entry>(Entry{key, value}));
 
         return true;
     }
@@ -190,13 +168,13 @@ private:
         Returns the index of the "Entry" for `key` in `container`. If "Entry" at `key`
         is deleted or never inserted in the first place, then -1 will be returned.
     */
-    int _getIndex(std::string &key)
+    int serializedKeyGetEntryIndex(const std::string &key) const
     {
-        int idx = _hash(key, container);
+        int idx = hash(key, const_cast<std::vector<std::unique_ptr<Entry>> &>(container));
 
         for (int i = idx; i < container.size(); i++)
         {
-            std::shared_ptr<Entry> el = container[i];
+            Entry *el = container[i].get();
 
             if (el == nullptr)
                 return -1;
@@ -210,13 +188,13 @@ private:
         Returns the "Entry" for `key`. If "Entry" at `key`
         is deleted or never inserted in the first place, then nullptr will be returned.
     */
-    std::shared_ptr<Entry> _get(std::string &key)
+    Entry *serializedKeyGetEntry(const std::string &key) const
     {
-        int idx = _getIndex(key);
+        int idx = serializedKeyGetEntryIndex(key);
         if (idx == -1)
             return nullptr;
 
-        return container[idx];
+        return container[idx].get();
     }
     /*
         Resizes `container` to `newSize`.
@@ -225,12 +203,14 @@ private:
         - If `newSize` is less than or equal to `itemCountInContainer` then the resize 
             will not be performed.
     */
-    void _resizeContainer(int newSize)
+    void resizeHashTableContainer(const int newSize)
     {
-        if(newSize < 0) return;
-        if(newSize != 0 && newSize <= itemCountInContainer) return;
+        if (newSize < 0)
+            return;
+        if (newSize != 0 && newSize <= itemCountInContainer)
+            return;
 
-        std::vector<std::shared_ptr<Entry>> newContainer(newSize);
+        std::vector<std::unique_ptr<Entry>> newContainer(newSize);
 
         if (newSize == 0)
         {
@@ -238,7 +218,7 @@ private:
         }
         else
         {
-            for (std::shared_ptr<Entry> el : container)
+            for (std::unique_ptr<Entry> &el : container)
             {
                 if (el == nullptr || el->isDeleted)
                     continue;
@@ -246,11 +226,19 @@ private:
                 std::string &key = el->key;
                 TValue &value = el->value;
 
-                _insert(key, value, newContainer);
+                serializedKeyInsert(key, value, newContainer);
             }
         }
 
-        container = newContainer;
+        /*
+            Destroy all entries that `container` owned and transfer ownership
+            of entries from `newContainer` to `container`.
+        */
+        container.clear();
+        for (std::unique_ptr<Entry> &el : newContainer)
+        {
+            container.push_back(std::move(el));
+        }
     }
 };
 
