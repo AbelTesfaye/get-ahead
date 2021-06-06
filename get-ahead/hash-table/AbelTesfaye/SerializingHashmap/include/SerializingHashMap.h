@@ -19,11 +19,17 @@
 template <typename TKey, typename TValue>
 class SerializingHashMap
 {
+    /*
+        Allow access to private members for the following tests
+    */
+    FRIEND_TEST(StringToIntTest, insertsAndGetsWorksAsExpected);
+    FRIEND_TEST(StringToIntTest, existsAndEraseWorkAsExpected);
+    FRIEND_TEST(CustomDataStructureTest, worksAsExpected);
+
 public:
     SerializingHashMap(
-        const std::function<std::string(TKey)> keySerializerFunction = [](std::string str) {
-            return str;
-        },
+        const std::function<std::string(TKey)> keySerializerFunction = [](std::string str)
+        { return str; },
         const int initSize = 1) : container(std::vector<std::unique_ptr<Entry>>(initSize)), keySerializerFunction(keySerializerFunction)
     {
     }
@@ -39,12 +45,7 @@ public:
             resizeHashTableContainer(itemCountInContainer == 0 ? 1 : container.size() * 2);
         }
 
-        bool isNewInsertion = serializedKeyInsert(keySerializerFunction(key), value, container);
-
-        if (isNewInsertion)
-            itemCountInContainer++;
-
-        return isNewInsertion;
+        return serializedKeyInsert(keySerializerFunction(key), value);
     }
     /*
         Returns the value in the hash table that is stored for `key`. 
@@ -110,22 +111,32 @@ private:
 
     std::function<std::string(TKey)> keySerializerFunction;
 
-    int hash(const std::string &key, const std::vector<std::unique_ptr<Entry>> &containerToUse) const
+    int hash(const std::string &key, const int containerSize) const
     {
         int idx = 0;
 
         for (int i = 0; i < key.size(); i++)
         {
             char byteAtOffset = key[i];
-            idx = (idx + byteAtOffset) % containerToUse.size();
+            idx = (idx + byteAtOffset) % containerSize;
         }
 
         return idx;
     }
 
-    bool serializedKeyInsert(const std::string &key,const TValue value, std::vector<std::unique_ptr<Entry>> &containerToUse)
+    bool serializedKeyInsert(const std::string &key, const TValue value)
     {
-        int idx = hash(key, containerToUse);
+        bool isNewInsertion = serializedKeyInsertInContainer(key, value, container);
+
+        if (isNewInsertion)
+            itemCountInContainer++;
+
+        return isNewInsertion;
+    }
+
+    bool serializedKeyInsertInContainer(const std::string &key, const TValue value, std::vector<std::unique_ptr<Entry>> &containerToUse)
+    {
+        int idx = hash(key, containerToUse.size());
 
         /*
             The code below searches for the correct index to place the hash table entry.
@@ -170,7 +181,7 @@ private:
     */
     int serializedKeyGetEntryIndex(const std::string &key) const
     {
-        int idx = hash(key, const_cast<std::vector<std::unique_ptr<Entry>> &>(container));
+        int idx = hash(key, container.size());
 
         for (int i = idx; i < container.size(); i++)
         {
@@ -226,7 +237,7 @@ private:
                 std::string &key = el->key;
                 TValue &value = el->value;
 
-                serializedKeyInsert(key, value, newContainer);
+                serializedKeyInsertInContainer(key, value, newContainer);
             }
         }
 

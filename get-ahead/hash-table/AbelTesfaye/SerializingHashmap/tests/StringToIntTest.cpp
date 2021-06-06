@@ -24,13 +24,16 @@ protected:
 
 TEST_F(StringToIntTest, insertsAndGetsWorksAsExpected)
 {
+    ASSERT_EQ(stringToInt1.container.size(), 1);
     ASSERT_EQ(stringToInt1.size(), 0);
     ASSERT_TRUE(stringToInt1.insert("hi0", 2));
     ASSERT_EQ(stringToInt1.get("hi0"), 2);
     ASSERT_EQ(stringToInt1.size(), 1);
 
     ASSERT_EQ(stringToInt1.insert("hi0", 6), false);
+    ASSERT_EQ(stringToInt1.container.size(), 2);
     ASSERT_EQ(stringToInt1.insert("hi0", 7), false);
+    ASSERT_EQ(stringToInt1.container.size(), 2);
 
     ASSERT_EQ(stringToInt1.get("hi0"), 7);
     ASSERT_EQ(stringToInt1.size(), 1);
@@ -38,7 +41,9 @@ TEST_F(StringToIntTest, insertsAndGetsWorksAsExpected)
     ASSERT_TRUE(stringToInt1.insert("hi1", 6));
     ASSERT_TRUE(stringToInt1.insert("hi2", 7));
     ASSERT_TRUE(stringToInt1.insert("hi3", 8));
+    ASSERT_EQ(stringToInt1.container.size(), 4);
     ASSERT_TRUE(stringToInt1.insert("hi4", 9));
+    ASSERT_EQ(stringToInt1.container.size(), 8);
     ASSERT_EQ(stringToInt1.size(), 5);
     ASSERT_EQ(stringToInt1.get("hi1"), 6);
     ASSERT_EQ(stringToInt1.get("hi2"), 7);
@@ -49,6 +54,7 @@ TEST_F(StringToIntTest, insertsAndGetsWorksAsExpected)
 TEST_F(StringToIntTest, existsAndEraseWorkAsExpected)
 {
 
+    ASSERT_EQ(stringToInt2.container.size(), 8);
     ASSERT_FALSE(stringToInt2.exists("hi5"));
     ASSERT_FALSE(stringToInt2.exists("hi10"));
     ASSERT_EQ(stringToInt2.size(), 5);
@@ -65,7 +71,12 @@ TEST_F(StringToIntTest, existsAndEraseWorkAsExpected)
 
     stringToInt2.erase("hi3");
     stringToInt2.erase("hi4");
+    ASSERT_EQ(stringToInt2.container.size(), 2);
     ASSERT_EQ(stringToInt2.size(), 1);
+
+    stringToInt2.erase("hi1");
+    ASSERT_EQ(stringToInt2.container.size(), 1);
+    ASSERT_EQ(stringToInt2.size(), 0);
 }
 
 TEST_F(StringToIntTest, getIsZeroForUndefinedValues)

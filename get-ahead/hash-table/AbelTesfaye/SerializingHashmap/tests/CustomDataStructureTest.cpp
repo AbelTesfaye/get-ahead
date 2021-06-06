@@ -52,7 +52,8 @@ protected:
     /*
         Function that is used to "string"ify a "TestData" object.
     */
-    std::function<std::string(TestData)> keySerializerFunc = [=](TestData key) {
+    std::function<std::string(TestData)> keySerializerFunc = [=](TestData key)
+    {
         return key.toString();
     };
 };
