@@ -5,6 +5,36 @@
 #include <vector>
 #include <functional>
 
+namespace DefaultSerializingHashMapFunctions
+{
+    template <typename TKey>
+    const std::function<std::string(TKey)> keySerializerFunction = [](const std::string str)
+    {
+        return str;
+    };
+
+    const std::function<int(const std::string &, const int)>
+        hashFunction =
+            [](const std::string &key, const int containerSize)
+    {
+        if (containerSize == 0)
+            return -1;
+
+        char *str = const_cast<char *>(key.c_str());
+
+        /*
+            This is the djb2 algorithm: http://www.cse.yorku.ca/~oz/hash.html
+        */
+        unsigned long hash = 5381;
+        int c;
+
+        while ((c = *str++))
+            hash = ((hash << 5) + hash) + c;
+
+        return int(hash % containerSize);
+    };
+}
+
 /*
   A hash table implementation that can be used on any data type.
   
@@ -22,15 +52,23 @@ class SerializingHashMap
     /*
         Allow access to private members for the following tests
     */
-    FRIEND_TEST(StringToIntTest, insertsAndGetsWorksAsExpected);
-    FRIEND_TEST(StringToIntTest, existsAndEraseWorkAsExpected);
+    FRIEND_TEST(StringToIntTest, initSizeWorksAsExpected);
+    FRIEND_TEST(StringToIntTest, resizeWorksAsExpected);
+    FRIEND_TEST(StringToIntTest, resizeWithInitSizeWorksAsExpected);
+    FRIEND_TEST(StringToIntTest, customHashFunctionWorksAsExpected);
     FRIEND_TEST(CustomDataStructureTest, worksAsExpected);
 
 public:
+    /*
+        `hashFunction` should return -1 if the hash/index could not be
+        determined i.e when `containerSize` is 0
+    */
     SerializingHashMap(
-        const std::function<std::string(TKey)> keySerializerFunction = [](std::string str)
-        { return str; },
-        const int initSize = 1) : container(std::vector<std::unique_ptr<Entry>>(initSize)), keySerializerFunction(keySerializerFunction)
+        const int initSize = 0,
+        const std::function<std::string(TKey)> keySerializerFunction = DefaultSerializingHashMapFunctions::keySerializerFunction<TKey>,
+        const std::function<int(const std::string &, const int)>
+            hashFunction = DefaultSerializingHashMapFunctions::hashFunction) : container(std::vector<std::unique_ptr<Entry>>(initSize)),
+                                                                               keySerializerFunction(keySerializerFunction), hashFunction(hashFunction)
     {
     }
 
@@ -78,7 +116,7 @@ public:
             itemCountInContainer--;
 
             int half = container.size() / 2;
-            if (itemCountInContainer < half)
+            if (itemCountInContainer <= half)
             {
                 resizeHashTableContainer(half);
             }
@@ -110,19 +148,7 @@ private:
     std::vector<std::unique_ptr<Entry>> container;
 
     std::function<std::string(TKey)> keySerializerFunction;
-
-    int hash(const std::string &key, const int containerSize) const
-    {
-        int idx = 0;
-
-        for (int i = 0; i < key.size(); i++)
-        {
-            char byteAtOffset = key[i];
-            idx = (idx + byteAtOffset) % containerSize;
-        }
-
-        return idx;
-    }
+    std::function<int(const std::string &, const int)> hashFunction;
 
     bool serializedKeyInsert(const std::string &key, const TValue value)
     {
@@ -136,7 +162,7 @@ private:
 
     bool serializedKeyInsertInContainer(const std::string &key, const TValue value, std::vector<std::unique_ptr<Entry>> &containerToUse)
     {
-        int idx = hash(key, containerToUse.size());
+        int idx = hashFunction(key, containerToUse.size());
 
         /*
             The code below searches for the correct index to place the hash table entry.
@@ -181,7 +207,7 @@ private:
     */
     int serializedKeyGetEntryIndex(const std::string &key) const
     {
-        int idx = hash(key, container.size());
+        int idx = hashFunction(key, container.size());
 
         for (int i = idx; i < container.size(); i++)
         {
@@ -211,14 +237,14 @@ private:
         Resizes `container` to `newSize`.
         
         - If `newSize` is 0 then the hash table will be emptied.
-        - If `newSize` is less than or equal to `itemCountInContainer` then the resize 
+        - If `newSize` is less than `itemCountInContainer` then the resize 
             will not be performed.
     */
     void resizeHashTableContainer(const int newSize)
     {
         if (newSize < 0)
             return;
-        if (newSize != 0 && newSize <= itemCountInContainer)
+        if (newSize != 0 && newSize < itemCountInContainer)
             return;
 
         std::vector<std::unique_ptr<Entry>> newContainer(newSize);
@@ -226,19 +252,19 @@ private:
         if (newSize == 0)
         {
             itemCountInContainer = 0;
+            container.clear();
+            return;
         }
-        else
+
+        for (std::unique_ptr<Entry> &el : container)
         {
-            for (std::unique_ptr<Entry> &el : container)
-            {
-                if (el == nullptr || el->isDeleted)
-                    continue;
+            if (el == nullptr || el->isDeleted)
+                continue;
 
-                std::string &key = el->key;
-                TValue &value = el->value;
+            std::string &key = el->key;
+            TValue &value = el->value;
 
-                serializedKeyInsertInContainer(key, value, newContainer);
-            }
+            serializedKeyInsertInContainer(key, value, newContainer);
         }
 
         /*

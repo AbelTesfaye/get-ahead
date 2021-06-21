@@ -8,7 +8,10 @@
 
 class CustomDataStructureTest : public ::testing::Test
 {
-protected:
+};
+
+TEST_F(CustomDataStructureTest, worksAsExpected)
+{
     struct TestData
     {
         char charData;
@@ -49,6 +52,7 @@ protected:
             return str;
         }
     };
+    
     /*
         Function that is used to "string"ify a "TestData" object.
     */
@@ -56,27 +60,62 @@ protected:
     {
         return key.toString();
     };
-};
-
-TEST_F(CustomDataStructureTest, worksAsExpected)
-{
 
     TestData obj1{'a', 1, 2, 0.123, 0.321};
     TestData obj2{'b', 2, 1, 0.321, 0.123};
 
-    SerializingHashMap<TestData, TestData> testDataToTestData1(keySerializerFunc);
+    /*
+        Create hash table using a custom `keySerializerFuncion` parameter
+    */
+    SerializingHashMap<TestData, TestData> testDataToTestData1(0, keySerializerFunc);
 
+    /*
+        Try to get an object that was never inserted before
+    */
     ASSERT_TRUE(testDataToTestData1.get(obj1) == TestData()) << "Default construction of custom data type is invalid";
+    
+    /*
+        Check exists method on an object that was never inserted before
+    */
     ASSERT_FALSE(testDataToTestData1.exists(obj2));
+
+    /*
+        Insert object and verify it's a new insertion
+    */
     ASSERT_TRUE(testDataToTestData1.insert(obj1, obj2));
+
+    /*
+        Check if inserted object is what we've inserted
+    */
     ASSERT_TRUE(testDataToTestData1.get(obj1) == obj2);
+
+    /*
+        Check if there's only 1 element in the hash table
+    */
     ASSERT_EQ(testDataToTestData1.size(), 1);
 
+    /*
+        Remove an object that was not inserted
+    */
     testDataToTestData1.erase(obj2);
 
+    /*
+        Check if there's only 1 element in the hash table 
+    */
     ASSERT_EQ(testDataToTestData1.size(), 1);
 
+    /*
+        Erase the element that was in the hash table
+    */
     testDataToTestData1.erase(obj1);
+
+    /*
+        Check if object was successfully removed
+    */
     ASSERT_FALSE(testDataToTestData1.exists(obj1));
+
+    /*
+        Make sure there are no more elements in the hash table 
+    */
     ASSERT_EQ(testDataToTestData1.size(), 0);
 }
