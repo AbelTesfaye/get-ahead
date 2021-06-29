@@ -8,9 +8,8 @@
 
 #include "../include/SerializingHashMap.h"
 
-class CustomDataStructureTest : public ::testing::Test {};
-
-TEST_F(CustomDataStructureTest, worksAsExpected) {
+class CustomDataStructureTest : public ::testing::Test {
+ protected:
   struct TestData {
     char charData;
     int integerData1, integerData2;
@@ -29,11 +28,13 @@ TEST_F(CustomDataStructureTest, worksAsExpected) {
     /*
         Checks equality of the "string" representation of both structs.
     */
-    bool operator==(TestData rhs) { return this->toString() == rhs.toString(); }
+    const bool operator==(const TestData rhs) const {
+      return this->toString() == rhs.toString();
+    }
     /*
         Converts "TestData" to a "string".
     */
-    std::string toString() {
+    const std::string toString() const {
       /*
           Make sure `uniqueSeparator` is a sequence of characters that will
           never occur in `stringData`.
@@ -61,61 +62,137 @@ TEST_F(CustomDataStructureTest, worksAsExpected) {
 
   TestData obj1{'a', 1, 2, 0.123, 0.321};
   TestData obj2{'b', 2, 1, 0.321, 0.123};
+  TestData obj3{'c', 3, 1, 0.132, 0.1};
+  TestData obj4{'d', 4, 2, 0.312, 0.2};
+};
 
-  /*
-      Create hash table using a custom `keySerializerFuncion` parameter
-  */
-  SerializingHashMap<TestData, TestData> testDataToTestData1(0,
+TEST_F(CustomDataStructureTest, insertGetAndSizeWorkAsExpected) {
+  SerializingHashMap<TestData, TestData> testDataToTestData(0,
+                                                            keySerializerFunc);
+
+  ASSERT_EQ(testDataToTestData.size(), 0);
+  ASSERT_TRUE(testDataToTestData.insert(obj1, obj2));
+  ASSERT_EQ(testDataToTestData.size(), 1);
+  ASSERT_EQ(testDataToTestData.get(obj1), obj2);
+}
+
+TEST_F(CustomDataStructureTest, existsAndEraseWorkAsExpected) {
+  SerializingHashMap<TestData, TestData> testDataToTestData(0,
+                                                            keySerializerFunc);
+
+  ASSERT_FALSE(testDataToTestData.exists(obj1));
+  ASSERT_FALSE(testDataToTestData.exists(obj2));
+  ASSERT_TRUE(testDataToTestData.insert(obj1, obj2));
+  ASSERT_TRUE(testDataToTestData.exists(obj1));
+  testDataToTestData.erase(obj1);
+  ASSERT_FALSE(testDataToTestData.exists(obj1));
+}
+
+TEST_F(CustomDataStructureTest, getDefaultConstructedObjectForUndefinedKey) {
+  SerializingHashMap<TestData, TestData> testDataToTestData(0,
+                                                            keySerializerFunc);
+
+  ASSERT_TRUE(testDataToTestData.get(obj1) == TestData())
+      << "Default construction of custom data type is invalid";
+}
+
+TEST_F(CustomDataStructureTest, initSizeWorksAsExpected) {
+  SerializingHashMap<TestData, TestData> testDataToTestData0(0,
+                                                             keySerializerFunc),
+      testDataToTestData10(10, keySerializerFunc),
+      testDataToTestData1000(1000, keySerializerFunc);
+
+  ASSERT_EQ(testDataToTestData0.container.size(), 0);
+  ASSERT_EQ(testDataToTestData10.container.size(), 10);
+  ASSERT_EQ(testDataToTestData1000.container.size(), 1000);
+}
+
+TEST_F(CustomDataStructureTest, resizeDefaultSizeContainer) {
+  SerializingHashMap<TestData, TestData> testDataToTestData(0,
+                                                            keySerializerFunc);
+
+  ASSERT_EQ(testDataToTestData.container.size(), 0);
+  testDataToTestData.insert(obj1, obj2);
+  ASSERT_EQ(testDataToTestData.container.size(), 1);
+  testDataToTestData.insert(obj2, obj3);
+  ASSERT_EQ(testDataToTestData.container.size(), 2);
+  testDataToTestData.insert(obj3, obj4);
+  ASSERT_EQ(testDataToTestData.container.size(), 4);
+
+  testDataToTestData.erase(obj3);
+  ASSERT_EQ(testDataToTestData.container.size(), 2);
+  testDataToTestData.erase(obj2);
+  ASSERT_EQ(testDataToTestData.container.size(), 1);
+  testDataToTestData.erase(obj1);
+  ASSERT_EQ(testDataToTestData.container.size(), 0);
+}
+
+TEST_F(CustomDataStructureTest, resizeWithInitSizeWorksAsExpected) {
+  SerializingHashMap<TestData, TestData> testDataToTestData8(8,
                                                              keySerializerFunc);
 
-  /*
-      Try to get an object that was never inserted before
-  */
-  ASSERT_TRUE(testDataToTestData1.get(obj1) == TestData())
-      << "Default construction of custom data type is invalid";
+  TestData obj5{'!'}, obj6{')'}, obj7{'&'}, obj8{';'}, obj9{'/'}, obj10{'Q'};
 
-  /*
-      Check exists method on an object that was never inserted before
-  */
-  ASSERT_FALSE(testDataToTestData1.exists(obj2));
+  ASSERT_EQ(testDataToTestData8.container.size(), 8);
+  testDataToTestData8.insert(obj1, obj2);
+  ASSERT_EQ(testDataToTestData8.container.size(), 8);
+  testDataToTestData8.insert(obj2, obj3);
+  testDataToTestData8.insert(obj3, obj4);
+  testDataToTestData8.insert(obj4, obj5);
+  testDataToTestData8.insert(obj5, obj6);
+  ASSERT_EQ(testDataToTestData8.container.size(), 8);
+  testDataToTestData8.insert(obj6, obj7);
+  testDataToTestData8.insert(obj7, obj8);
+  testDataToTestData8.insert(obj8, obj9);
+  ASSERT_EQ(testDataToTestData8.container.size(), 8);
+  testDataToTestData8.insert(obj9, obj10);
+  ASSERT_EQ(testDataToTestData8.container.size(), 16);
 
-  /*
-      Insert object and verify it's a new insertion
-  */
-  ASSERT_TRUE(testDataToTestData1.insert(obj1, obj2));
+  testDataToTestData8.erase(obj9);
+  ASSERT_EQ(testDataToTestData8.container.size(), 8);
+  testDataToTestData8.erase(obj8);
+  testDataToTestData8.erase(obj7);
+  testDataToTestData8.erase(obj6);
+  testDataToTestData8.erase(obj5);
+  testDataToTestData8.erase(obj4);
+  ASSERT_EQ(testDataToTestData8.container.size(), 4);
+  testDataToTestData8.erase(obj3);
+  ASSERT_EQ(testDataToTestData8.container.size(), 2);
+  testDataToTestData8.erase(obj2);
+  ASSERT_EQ(testDataToTestData8.container.size(), 1);
+  testDataToTestData8.erase(obj1);
+  ASSERT_EQ(testDataToTestData8.container.size(), 0);
+}
 
-  /*
-      Check if inserted object is what we've inserted
-  */
-  ASSERT_TRUE(testDataToTestData1.get(obj1) == obj2);
+TEST_F(CustomDataStructureTest, customHashFunctionWorksAsExpected) {
+  const std::function<int(const std::string &, const int)> myHashFunction =
+      [](const std::string &key, const int containerSize) {
+        if (containerSize == 0) return -1;
 
-  /*
-      Check if there's only 1 element in the hash table
-  */
-  ASSERT_EQ(testDataToTestData1.size(), 1);
+        int idx = 0;
 
-  /*
-      Remove an object that was not inserted
-  */
-  testDataToTestData1.erase(obj2);
+        for (int i = 0; i < key.size(); i++) {
+          char byteAtOffset = key[i];
+          idx = (idx + byteAtOffset) % containerSize;
+        }
 
-  /*
-      Check if there's only 1 element in the hash table
-  */
-  ASSERT_EQ(testDataToTestData1.size(), 1);
+        return idx;
+      };
 
-  /*
-      Erase the element that was in the hash table
-  */
-  testDataToTestData1.erase(obj1);
+  SerializingHashMap<TestData, TestData> testDataToTestData(
+      0, keySerializerFunc, myHashFunction);
 
-  /*
-      Check if object was successfully removed
-  */
-  ASSERT_FALSE(testDataToTestData1.exists(obj1));
+  ASSERT_TRUE(testDataToTestData.insert(obj1, obj2));
+  ASSERT_EQ(testDataToTestData
+                .container[myHashFunction(obj1.toString(),
+                                          testDataToTestData.container.size())]
+                ->key,
+            obj1.toString());
 
-  /*
-      Make sure there are no more elements in the hash table
-  */
-  ASSERT_EQ(testDataToTestData1.size(), 0);
+  ASSERT_TRUE(testDataToTestData.insert(obj2, obj3));
+  ASSERT_EQ(testDataToTestData
+                .container[myHashFunction(obj2.toString(),
+                                          testDataToTestData.container.size())]
+                ->key,
+            obj2.toString());
 }

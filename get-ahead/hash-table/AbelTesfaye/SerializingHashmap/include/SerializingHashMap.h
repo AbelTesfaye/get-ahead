@@ -45,10 +45,13 @@ class SerializingHashMap {
       Allow access to private members for the following tests
   */
   FRIEND_TEST(StringToIntTest, initSizeWorksAsExpected);
-  FRIEND_TEST(StringToIntTest, resizeWorksAsExpected);
+  FRIEND_TEST(StringToIntTest, resizeDefaultSizeContainer);
   FRIEND_TEST(StringToIntTest, resizeWithInitSizeWorksAsExpected);
   FRIEND_TEST(StringToIntTest, customHashFunctionWorksAsExpected);
-  FRIEND_TEST(CustomDataStructureTest, worksAsExpected);
+  FRIEND_TEST(CustomDataStructureTest, initSizeWorksAsExpected);
+  FRIEND_TEST(CustomDataStructureTest, resizeDefaultSizeContainer);
+  FRIEND_TEST(CustomDataStructureTest, resizeWithInitSizeWorksAsExpected);
+  FRIEND_TEST(CustomDataStructureTest, customHashFunctionWorksAsExpected);
 
  public:
   /*

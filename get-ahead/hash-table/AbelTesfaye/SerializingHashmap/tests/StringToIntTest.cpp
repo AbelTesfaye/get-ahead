@@ -64,20 +64,10 @@ TEST_F(StringToIntTest, existsAndEraseWorkAsExpected) {
   stringToInt.erase("hi1");
 }
 
-TEST_F(StringToIntTest, getZeroForUndefinedValues) {
+TEST_F(StringToIntTest, getZeroForUndefinedKey) {
   SerializingHashMap<std::string, int> stringToInt;
-  stringToInt.insert("THIS IS A DEFINED KEY", 6);
 
-  for (int i = 0; i < 10; i++) {
-    std::string key = "THIS IS **NOT** A DEFINED KEY: " + std::to_string(i);
-
-    if (key == "THIS IS A DEFINED KEY") {
-      ASSERT_EQ(stringToInt.get(key), 6);
-      continue;
-    }
-
-    ASSERT_EQ(stringToInt.get(key), 0);
-  }
+  ASSERT_EQ(stringToInt.get("THIS IS **NOT** A DEFINED KEY"), 0);
 }
 
 TEST_F(StringToIntTest, initSizeWorksAsExpected) {
@@ -89,7 +79,7 @@ TEST_F(StringToIntTest, initSizeWorksAsExpected) {
   ASSERT_EQ(stringToInt1000.container.size(), 1000);
 }
 
-TEST_F(StringToIntTest, resizeWorksAsExpected) {
+TEST_F(StringToIntTest, resizeDefaultSizeContainer) {
   SerializingHashMap<std::string, int> stringToInt;
 
   ASSERT_EQ(stringToInt.container.size(), 0);
