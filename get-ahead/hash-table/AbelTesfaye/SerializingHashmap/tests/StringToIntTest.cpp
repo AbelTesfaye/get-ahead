@@ -13,8 +13,8 @@ TEST_F(StringToIntTest, insertGetAndSizeWorkAsExpected) {
   SerializingHashMap<std::string, int> stringToInt;
 
   ASSERT_EQ(stringToInt.size(), 0);
-  ASSERT_TRUE(stringToInt.insert("hi0", 2));
-  ASSERT_EQ(stringToInt.get("hi0"), 2);
+  ASSERT_TRUE(stringToInt.insert("hi0", 0));
+  ASSERT_EQ(stringToInt.get("hi0"), 0);
   ASSERT_EQ(stringToInt.size(), 1);
 
   ASSERT_EQ(stringToInt.insert("hi0", 6), false);
@@ -23,25 +23,25 @@ TEST_F(StringToIntTest, insertGetAndSizeWorkAsExpected) {
   ASSERT_EQ(stringToInt.get("hi0"), 7);
   ASSERT_EQ(stringToInt.size(), 1);
 
-  ASSERT_TRUE(stringToInt.insert("hi1", 6));
-  ASSERT_TRUE(stringToInt.insert("hi2", 7));
-  ASSERT_TRUE(stringToInt.insert("hi3", 8));
-  ASSERT_TRUE(stringToInt.insert("hi4", 9));
+  ASSERT_TRUE(stringToInt.insert("hi1", 1));
+  ASSERT_TRUE(stringToInt.insert("hi2", 2));
+  ASSERT_TRUE(stringToInt.insert("hi3", 3));
+  ASSERT_TRUE(stringToInt.insert("hi4", 4));
   ASSERT_EQ(stringToInt.size(), 5);
-  ASSERT_EQ(stringToInt.get("hi1"), 6);
-  ASSERT_EQ(stringToInt.get("hi2"), 7);
-  ASSERT_EQ(stringToInt.get("hi3"), 8);
-  ASSERT_EQ(stringToInt.get("hi4"), 9);
+  ASSERT_EQ(stringToInt.get("hi1"), 1);
+  ASSERT_EQ(stringToInt.get("hi2"), 2);
+  ASSERT_EQ(stringToInt.get("hi3"), 3);
+  ASSERT_EQ(stringToInt.get("hi4"), 4);
 }
 
 TEST_F(StringToIntTest, existsAndEraseWorkAsExpected) {
   SerializingHashMap<std::string, int> stringToInt;
 
-  stringToInt.insert("hi0", 7);
-  stringToInt.insert("hi1", 6);
-  stringToInt.insert("hi2", 7);
-  stringToInt.insert("hi3", 8);
-  stringToInt.insert("hi4", 9);
+  stringToInt.insert("hi0", 0);
+  stringToInt.insert("hi1", 1);
+  stringToInt.insert("hi2", 2);
+  stringToInt.insert("hi3", 3);
+  stringToInt.insert("hi4", 4);
 
   ASSERT_FALSE(stringToInt.exists("hi5"));
   ASSERT_FALSE(stringToInt.exists("hi10"));
@@ -70,7 +70,7 @@ TEST_F(StringToIntTest, getZeroForUndefinedKey) {
   ASSERT_EQ(stringToInt.get("THIS IS **NOT** A DEFINED KEY"), 0);
 }
 
-TEST_F(StringToIntTest, initSizeWorksAsExpected) {
+TEST_F(StringToIntTest, initCapacityWorksAsExpected) {
   SerializingHashMap<std::string, int> stringToInt0, stringToInt10(10),
       stringToInt1000(1000);
 
@@ -79,7 +79,7 @@ TEST_F(StringToIntTest, initSizeWorksAsExpected) {
   ASSERT_EQ(stringToInt1000.container.size(), 1000);
 }
 
-TEST_F(StringToIntTest, resizeDefaultSizeContainer) {
+TEST_F(StringToIntTest, resizeDefaultCapacityContainer) {
   SerializingHashMap<std::string, int> stringToInt;
 
   ASSERT_EQ(stringToInt.container.size(), 0);
@@ -98,7 +98,7 @@ TEST_F(StringToIntTest, resizeDefaultSizeContainer) {
   ASSERT_EQ(stringToInt.container.size(), 0);
 }
 
-TEST_F(StringToIntTest, resizeWithInitSizeWorksAsExpected) {
+TEST_F(StringToIntTest, resizeWithInitCapacityWorksAsExpected) {
   SerializingHashMap<std::string, int> stringToInt8(8);
 
   ASSERT_EQ(stringToInt8.container.size(), 8);

@@ -59,17 +59,14 @@ class CustomDataStructureTest : public ::testing::Test {
   std::function<std::string(TestData)> keySerializerFunc = [=](TestData key) {
     return key.toString();
   };
-
-  TestData obj1{'a', 1, 2, 0.123, 0.321};
-  TestData obj2{'b', 2, 1, 0.321, 0.123};
-  TestData obj3{'c', 3, 1, 0.132, 0.1};
-  TestData obj4{'d', 4, 2, 0.312, 0.2};
 };
 
 TEST_F(CustomDataStructureTest, insertGetAndSizeWorkAsExpected) {
   SerializingHashMap<TestData, TestData> testDataToTestData(0,
                                                             keySerializerFunc);
 
+  TestData obj1{'a', 1, 2, 0.123, 0.321};
+  TestData obj2{'b', 2, 1, 0.321, 0.123};
   ASSERT_EQ(testDataToTestData.size(), 0);
   ASSERT_TRUE(testDataToTestData.insert(obj1, obj2));
   ASSERT_EQ(testDataToTestData.size(), 1);
@@ -80,6 +77,8 @@ TEST_F(CustomDataStructureTest, existsAndEraseWorkAsExpected) {
   SerializingHashMap<TestData, TestData> testDataToTestData(0,
                                                             keySerializerFunc);
 
+  TestData obj1{'a', 1, 2, 0.123, 0.321};
+  TestData obj2{'b', 2, 1, 0.321, 0.123};
   ASSERT_FALSE(testDataToTestData.exists(obj1));
   ASSERT_FALSE(testDataToTestData.exists(obj2));
   ASSERT_TRUE(testDataToTestData.insert(obj1, obj2));
@@ -92,11 +91,12 @@ TEST_F(CustomDataStructureTest, getDefaultConstructedObjectForUndefinedKey) {
   SerializingHashMap<TestData, TestData> testDataToTestData(0,
                                                             keySerializerFunc);
 
+  TestData obj1{'a', 1, 2, 0.123, 0.321};
   ASSERT_TRUE(testDataToTestData.get(obj1) == TestData())
       << "Default construction of custom data type is invalid";
 }
 
-TEST_F(CustomDataStructureTest, initSizeWorksAsExpected) {
+TEST_F(CustomDataStructureTest, initCapacityWorksAsExpected) {
   SerializingHashMap<TestData, TestData> testDataToTestData0(0,
                                                              keySerializerFunc),
       testDataToTestData10(10, keySerializerFunc),
@@ -107,10 +107,13 @@ TEST_F(CustomDataStructureTest, initSizeWorksAsExpected) {
   ASSERT_EQ(testDataToTestData1000.container.size(), 1000);
 }
 
-TEST_F(CustomDataStructureTest, resizeDefaultSizeContainer) {
+TEST_F(CustomDataStructureTest, resizeZeroCapacityContainer) {
   SerializingHashMap<TestData, TestData> testDataToTestData(0,
                                                             keySerializerFunc);
-
+  TestData obj1{'a', 1, 2, 0.123, 0.321};
+  TestData obj2{'b', 2, 1, 0.321, 0.123};
+  TestData obj3{'c', 3, 1, 0.132, 0.1};
+  TestData obj4{'d', 4, 2, 0.312, 0.2};
   ASSERT_EQ(testDataToTestData.container.size(), 0);
   testDataToTestData.insert(obj1, obj2);
   ASSERT_EQ(testDataToTestData.container.size(), 1);
@@ -127,11 +130,12 @@ TEST_F(CustomDataStructureTest, resizeDefaultSizeContainer) {
   ASSERT_EQ(testDataToTestData.container.size(), 0);
 }
 
-TEST_F(CustomDataStructureTest, resizeWithInitSizeWorksAsExpected) {
+TEST_F(CustomDataStructureTest, resizeWithInitCapacityWorksAsExpected) {
   SerializingHashMap<TestData, TestData> testDataToTestData8(8,
                                                              keySerializerFunc);
 
-  TestData obj5{'!'}, obj6{')'}, obj7{'&'}, obj8{';'}, obj9{'/'}, obj10{'Q'};
+  TestData obj1{'a'}, obj2{'b'}, obj3{'c'}, obj4{'d'}, obj5{'!'}, obj6{')'},
+      obj7{'&'}, obj8{';'}, obj9{'/'}, obj10{'Q'};
 
   ASSERT_EQ(testDataToTestData8.container.size(), 8);
   testDataToTestData8.insert(obj1, obj2);
@@ -181,6 +185,10 @@ TEST_F(CustomDataStructureTest, customHashFunctionWorksAsExpected) {
 
   SerializingHashMap<TestData, TestData> testDataToTestData(
       0, keySerializerFunc, myHashFunction);
+
+  TestData obj1{'a', 1, 2, 0.123, 0.321};
+  TestData obj2{'b', 2, 1, 0.321, 0.123};
+  TestData obj3{'c'};
 
   ASSERT_TRUE(testDataToTestData.insert(obj1, obj2));
   ASSERT_EQ(testDataToTestData

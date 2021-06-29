@@ -20,7 +20,7 @@ const std::function<int(const std::string &, const int)> hashFunction =
           This is the djb2 algorithm: http://www.cse.yorku.ca/~oz/hash.html
       */
       unsigned long hash = 5381;
-      int c;
+      int c = 0;
 
       while ((c = *str++)) hash = ((hash << 5) + hash) + c;
 
@@ -44,13 +44,13 @@ class SerializingHashMap {
   /*
       Allow access to private members for the following tests
   */
-  FRIEND_TEST(StringToIntTest, initSizeWorksAsExpected);
-  FRIEND_TEST(StringToIntTest, resizeDefaultSizeContainer);
-  FRIEND_TEST(StringToIntTest, resizeWithInitSizeWorksAsExpected);
+  FRIEND_TEST(StringToIntTest, initCapacityWorksAsExpected);
+  FRIEND_TEST(StringToIntTest, resizeDefaultCapacityContainer);
+  FRIEND_TEST(StringToIntTest, resizeWithInitCapacityWorksAsExpected);
   FRIEND_TEST(StringToIntTest, customHashFunctionWorksAsExpected);
-  FRIEND_TEST(CustomDataStructureTest, initSizeWorksAsExpected);
-  FRIEND_TEST(CustomDataStructureTest, resizeDefaultSizeContainer);
-  FRIEND_TEST(CustomDataStructureTest, resizeWithInitSizeWorksAsExpected);
+  FRIEND_TEST(CustomDataStructureTest, initCapacityWorksAsExpected);
+  FRIEND_TEST(CustomDataStructureTest, resizeZeroCapacityContainer);
+  FRIEND_TEST(CustomDataStructureTest, resizeWithInitCapacityWorksAsExpected);
   FRIEND_TEST(CustomDataStructureTest, customHashFunctionWorksAsExpected);
 
  public:
@@ -59,12 +59,12 @@ class SerializingHashMap {
       determined i.e when `containerSize` is 0
   */
   SerializingHashMap(
-      const int initSize = 0,
+      const int initCapacity = 0,
       const std::function<std::string(TKey)> keySerializerFunction =
           DefaultSerializingHashMapFunctions::keySerializerFunction<TKey>,
       const std::function<int(const std::string &, const int)> hashFunction =
           DefaultSerializingHashMapFunctions::hashFunction)
-      : container(std::vector<std::unique_ptr<Entry>>(initSize)),
+      : container(std::vector<std::unique_ptr<Entry>>(initCapacity)),
         keySerializerFunction(keySerializerFunction),
         hashFunction(hashFunction) {}
 
@@ -95,7 +95,7 @@ class SerializingHashMap {
   }
 
   void erase(const TKey key) {
-    int i = serializedKeyGetEntryIndex(keySerializerFunction(key));
+    const int i = serializedKeyGetEntryIndex(keySerializerFunction(key));
 
     if (i == -1) return;
 
@@ -135,7 +135,8 @@ class SerializingHashMap {
   std::function<int(const std::string &, const int)> hashFunction;
 
   bool serializedKeyInsert(const std::string &key, const TValue value) {
-    bool isNewInsertion = serializedKeyInsertInContainer(key, value, container);
+    const bool isNewInsertion =
+        serializedKeyInsertInContainer(key, value, container);
 
     if (isNewInsertion) itemCountInContainer++;
 
@@ -145,7 +146,7 @@ class SerializingHashMap {
   bool serializedKeyInsertInContainer(
       const std::string &key, const TValue value,
       std::vector<std::unique_ptr<Entry>> &containerToUse) {
-    int idx = hashFunction(key, containerToUse.size());
+    const int idx = hashFunction(key, containerToUse.size());
 
     /*
         The code below searches for the correct index to place the hash table
@@ -189,7 +190,7 @@ class SerializingHashMap {
      returned.
   */
   int serializedKeyGetEntryIndex(const std::string &key) const {
-    int idx = hashFunction(key, container.size());
+    const int idx = hashFunction(key, container.size());
 
     for (int i = idx; i < container.size(); i++) {
       Entry *el = container[i].get();
@@ -206,7 +207,7 @@ class SerializingHashMap {
      returned.
   */
   Entry *serializedKeyGetEntry(const std::string &key) const {
-    int idx = serializedKeyGetEntryIndex(key);
+    const int idx = serializedKeyGetEntryIndex(key);
     if (idx == -1) return nullptr;
 
     return container[idx].get();
