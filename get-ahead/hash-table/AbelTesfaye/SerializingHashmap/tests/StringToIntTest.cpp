@@ -74,62 +74,61 @@ TEST_F(StringToIntTest, initCapacityWorksAsExpected) {
   SerializingHashMap<std::string, int> stringToInt0, stringToInt10(10),
       stringToInt1000(1000);
 
-  ASSERT_EQ(stringToInt0.container.size(), 0);
-  ASSERT_EQ(stringToInt10.container.size(), 10);
-  ASSERT_EQ(stringToInt1000.container.size(), 1000);
+  ASSERT_EQ(stringToInt0.capacity(), 0);
+  ASSERT_EQ(stringToInt10.capacity(), 10);
+  ASSERT_EQ(stringToInt1000.capacity(), 1000);
 }
 
 TEST_F(StringToIntTest, resizeDefaultCapacityContainer) {
   SerializingHashMap<std::string, int> stringToInt;
 
-  ASSERT_EQ(stringToInt.container.size(), 0);
+  ASSERT_EQ(stringToInt.capacity(), 0);
   stringToInt.insert("hi0", 123);
-  ASSERT_EQ(stringToInt.container.size(), 1);
+  ASSERT_EQ(stringToInt.capacity(), 1);
   stringToInt.insert("hi1", 123);
-  ASSERT_EQ(stringToInt.container.size(), 2);
+  ASSERT_EQ(stringToInt.capacity(), 2);
   stringToInt.insert("hi2", 123);
-  ASSERT_EQ(stringToInt.container.size(), 4);
+  ASSERT_EQ(stringToInt.capacity(), 4);
 
   stringToInt.erase("hi2");
-  ASSERT_EQ(stringToInt.container.size(), 2);
+  ASSERT_EQ(stringToInt.capacity(), 2);
   stringToInt.erase("hi1");
-  ASSERT_EQ(stringToInt.container.size(), 1);
+  ASSERT_EQ(stringToInt.capacity(), 1);
   stringToInt.erase("hi0");
-  ASSERT_EQ(stringToInt.container.size(), 0);
+  ASSERT_EQ(stringToInt.capacity(), 0);
 }
 
 TEST_F(StringToIntTest, resizeWithInitCapacityWorksAsExpected) {
   SerializingHashMap<std::string, int> stringToInt8(8);
 
-  ASSERT_EQ(stringToInt8.container.size(), 8);
+  int previousCapacity = stringToInt8.capacity();
+
   stringToInt8.insert("hi0", 123);
-  ASSERT_EQ(stringToInt8.container.size(), 8);
   stringToInt8.insert("hi1", 123);
   stringToInt8.insert("hi2", 123);
   stringToInt8.insert("hi3", 123);
   stringToInt8.insert("hi4", 123);
-  ASSERT_EQ(stringToInt8.container.size(), 8);
   stringToInt8.insert("hi5", 123);
   stringToInt8.insert("hi6", 123);
   stringToInt8.insert("hi7", 123);
-  ASSERT_EQ(stringToInt8.container.size(), 8);
+  /*
+    Inserting the 9th element should grow the capacity
+  */
   stringToInt8.insert("hi8", 123);
-  ASSERT_EQ(stringToInt8.container.size(), 16);
+  ASSERT_GT(stringToInt8.capacity(), previousCapacity);
+  previousCapacity = stringToInt8.capacity();
 
   stringToInt8.erase("hi8");
-  ASSERT_EQ(stringToInt8.container.size(), 8);
   stringToInt8.erase("hi7");
   stringToInt8.erase("hi6");
   stringToInt8.erase("hi5");
   stringToInt8.erase("hi4");
   stringToInt8.erase("hi3");
-  ASSERT_EQ(stringToInt8.container.size(), 4);
   stringToInt8.erase("hi2");
-  ASSERT_EQ(stringToInt8.container.size(), 2);
   stringToInt8.erase("hi1");
-  ASSERT_EQ(stringToInt8.container.size(), 1);
   stringToInt8.erase("hi0");
-  ASSERT_EQ(stringToInt8.container.size(), 0);
+
+  ASSERT_LT(stringToInt8.capacity(), previousCapacity);
 }
 
 TEST_F(StringToIntTest, customHashFunctionWorksAsExpected) {
@@ -152,14 +151,12 @@ TEST_F(StringToIntTest, customHashFunctionWorksAsExpected) {
       myHashFunction);
 
   ASSERT_TRUE(stringToInt.insert("hi0", 123));
-  ASSERT_EQ(stringToInt
-                .container[myHashFunction("hi0", stringToInt.container.size())]
-                ->key,
-            "hi0");
+  ASSERT_EQ(
+      stringToInt.container[myHashFunction("hi0", stringToInt.capacity())]->key,
+      "hi0");
 
   ASSERT_TRUE(stringToInt.insert("hi1", 123));
-  ASSERT_EQ(stringToInt
-                .container[myHashFunction("hi1", stringToInt.container.size())]
-                ->key,
-            "hi1");
+  ASSERT_EQ(
+      stringToInt.container[myHashFunction("hi1", stringToInt.capacity())]->key,
+      "hi1");
 }

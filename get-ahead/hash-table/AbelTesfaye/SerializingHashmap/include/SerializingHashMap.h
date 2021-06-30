@@ -73,9 +73,8 @@ class SerializingHashMap {
       entry previously created for `key` or if `key` was previously deleted.
   */
   bool insert(const TKey key, const TValue value) {
-    if (itemCountInContainer == container.size()) {
-      resizeHashTableContainer(
-          itemCountInContainer == 0 ? 1 : container.size() * 2);
+    if (itemCountInContainer == capacity()) {
+      resizeHashTableContainer(itemCountInContainer == 0 ? 1 : capacity() * 2);
     }
 
     return serializedKeyInsert(keySerializerFunction(key), value);
@@ -105,7 +104,7 @@ class SerializingHashMap {
       el->isDeleted = true;
       itemCountInContainer--;
 
-      int half = container.size() / 2;
+      const int half = capacity() / 2;
       if (itemCountInContainer <= half) {
         resizeHashTableContainer(half);
       }
@@ -116,7 +115,7 @@ class SerializingHashMap {
     return serializedKeyGetEntry(keySerializerFunction(key)) != nullptr;
   }
 
-  int size() const { return itemCountInContainer; }
+  size_t size() const { return itemCountInContainer; }
 
  private:
   /*
@@ -190,9 +189,9 @@ class SerializingHashMap {
      returned.
   */
   int serializedKeyGetEntryIndex(const std::string &key) const {
-    const int idx = hashFunction(key, container.size());
+    const int idx = hashFunction(key, capacity());
 
-    for (int i = idx; i < container.size(); i++) {
+    for (int i = idx; i < capacity(); i++) {
       Entry *el = container[i].get();
 
       if (el == nullptr) return -1;
@@ -249,6 +248,11 @@ class SerializingHashMap {
       container.push_back(std::move(el));
     }
   }
+  /*
+      Returns the capacity (number of items it can hold without needing to be resized)
+      of the hash table's container. 
+  */
+  size_t capacity() const { return container.size(); }
 };
 
 #endif  // SERIALIZINGHASHMAP_H

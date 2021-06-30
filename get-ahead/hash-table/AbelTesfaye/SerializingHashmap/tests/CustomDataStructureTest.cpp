@@ -102,9 +102,9 @@ TEST_F(CustomDataStructureTest, initCapacityWorksAsExpected) {
       testDataToTestData10(10, keySerializerFunc),
       testDataToTestData1000(1000, keySerializerFunc);
 
-  ASSERT_EQ(testDataToTestData0.container.size(), 0);
-  ASSERT_EQ(testDataToTestData10.container.size(), 10);
-  ASSERT_EQ(testDataToTestData1000.container.size(), 1000);
+  ASSERT_EQ(testDataToTestData0.capacity(), 0);
+  ASSERT_EQ(testDataToTestData10.capacity(), 10);
+  ASSERT_EQ(testDataToTestData1000.capacity(), 1000);
 }
 
 TEST_F(CustomDataStructureTest, resizeZeroCapacityContainer) {
@@ -114,20 +114,20 @@ TEST_F(CustomDataStructureTest, resizeZeroCapacityContainer) {
   TestData obj2{'b', 2, 1, 0.321, 0.123};
   TestData obj3{'c', 3, 1, 0.132, 0.1};
   TestData obj4{'d', 4, 2, 0.312, 0.2};
-  ASSERT_EQ(testDataToTestData.container.size(), 0);
+  ASSERT_EQ(testDataToTestData.capacity(), 0);
   testDataToTestData.insert(obj1, obj2);
-  ASSERT_EQ(testDataToTestData.container.size(), 1);
+  ASSERT_EQ(testDataToTestData.capacity(), 1);
   testDataToTestData.insert(obj2, obj3);
-  ASSERT_EQ(testDataToTestData.container.size(), 2);
+  ASSERT_EQ(testDataToTestData.capacity(), 2);
   testDataToTestData.insert(obj3, obj4);
-  ASSERT_EQ(testDataToTestData.container.size(), 4);
+  ASSERT_EQ(testDataToTestData.capacity(), 4);
 
   testDataToTestData.erase(obj3);
-  ASSERT_EQ(testDataToTestData.container.size(), 2);
+  ASSERT_EQ(testDataToTestData.capacity(), 2);
   testDataToTestData.erase(obj2);
-  ASSERT_EQ(testDataToTestData.container.size(), 1);
+  ASSERT_EQ(testDataToTestData.capacity(), 1);
   testDataToTestData.erase(obj1);
-  ASSERT_EQ(testDataToTestData.container.size(), 0);
+  ASSERT_EQ(testDataToTestData.capacity(), 0);
 }
 
 TEST_F(CustomDataStructureTest, resizeWithInitCapacityWorksAsExpected) {
@@ -137,35 +137,33 @@ TEST_F(CustomDataStructureTest, resizeWithInitCapacityWorksAsExpected) {
   TestData obj1{'a'}, obj2{'b'}, obj3{'c'}, obj4{'d'}, obj5{'!'}, obj6{')'},
       obj7{'&'}, obj8{';'}, obj9{'/'}, obj10{'Q'};
 
-  ASSERT_EQ(testDataToTestData8.container.size(), 8);
+  int previousCapacity = testDataToTestData8.capacity();
+
   testDataToTestData8.insert(obj1, obj2);
-  ASSERT_EQ(testDataToTestData8.container.size(), 8);
   testDataToTestData8.insert(obj2, obj3);
   testDataToTestData8.insert(obj3, obj4);
   testDataToTestData8.insert(obj4, obj5);
   testDataToTestData8.insert(obj5, obj6);
-  ASSERT_EQ(testDataToTestData8.container.size(), 8);
   testDataToTestData8.insert(obj6, obj7);
   testDataToTestData8.insert(obj7, obj8);
   testDataToTestData8.insert(obj8, obj9);
-  ASSERT_EQ(testDataToTestData8.container.size(), 8);
   testDataToTestData8.insert(obj9, obj10);
-  ASSERT_EQ(testDataToTestData8.container.size(), 16);
+  /*
+    Inserting the 9th element should grow the capacity
+  */
+  ASSERT_GT(testDataToTestData8.capacity(), previousCapacity);
+  previousCapacity = testDataToTestData8.capacity();
 
   testDataToTestData8.erase(obj9);
-  ASSERT_EQ(testDataToTestData8.container.size(), 8);
   testDataToTestData8.erase(obj8);
   testDataToTestData8.erase(obj7);
   testDataToTestData8.erase(obj6);
   testDataToTestData8.erase(obj5);
   testDataToTestData8.erase(obj4);
-  ASSERT_EQ(testDataToTestData8.container.size(), 4);
   testDataToTestData8.erase(obj3);
-  ASSERT_EQ(testDataToTestData8.container.size(), 2);
   testDataToTestData8.erase(obj2);
-  ASSERT_EQ(testDataToTestData8.container.size(), 1);
   testDataToTestData8.erase(obj1);
-  ASSERT_EQ(testDataToTestData8.container.size(), 0);
+  ASSERT_LT(testDataToTestData8.capacity(), previousCapacity);
 }
 
 TEST_F(CustomDataStructureTest, customHashFunctionWorksAsExpected) {
@@ -193,14 +191,14 @@ TEST_F(CustomDataStructureTest, customHashFunctionWorksAsExpected) {
   ASSERT_TRUE(testDataToTestData.insert(obj1, obj2));
   ASSERT_EQ(testDataToTestData
                 .container[myHashFunction(obj1.toString(),
-                                          testDataToTestData.container.size())]
+                                          testDataToTestData.capacity())]
                 ->key,
             obj1.toString());
 
   ASSERT_TRUE(testDataToTestData.insert(obj2, obj3));
   ASSERT_EQ(testDataToTestData
                 .container[myHashFunction(obj2.toString(),
-                                          testDataToTestData.container.size())]
+                                          testDataToTestData.capacity())]
                 ->key,
             obj2.toString());
 }
